@@ -1,0 +1,357 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 800px;
+                 background-color: #111111;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#e57ee5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Salon_Biofal", "label": "Biofal", "shape": "ellipse", "title": "MI-Salon_Biofal\nInstancia de: MC-Salon_externo"}, {"color": "#E0E0E0", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#Habilitado", "label": "Habilitado", "shape": "ellipse", "title": "Habilitado\nInstancia de: -"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MC-Cerveza", "label": "\u00abClase\u00bb\nMC-Cerveza", "shape": "hexagon"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MC-Bebida", "label": "\u00abClase\u00bb\nMC-Bebida", "shape": "hexagon"}, {"color": "#e57ee5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Salon_Uta", "label": "Uta", "shape": "ellipse", "title": "MI-Salon_Uta\nInstancia de: MC-Salon_externo"}, {"color": "#e57ee5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MC-Salon_externo", "label": "\u00abClase\u00bb\nMC-Salon_externo", "shape": "hexagon"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Carne_Vacuna", "label": "Cortes Asado y Embutidos", "shape": "ellipse", "title": "MI-Carne_Vacuna\nInstancia de: MC-Insumo_Frio"}, {"color": "#7e7ee5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Proveedor_A", "label": "Proveedor A", "shape": "ellipse", "title": "MI-Proveedor_A\nInstancia de: MC-Proveedor_Nivel_1"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Perejil", "label": "Perejil", "shape": "ellipse", "title": "MI-Perejil\nInstancia de: MC-Insumo_Almacenable"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MC-Insumo_Almacenable", "label": "\u00abClase\u00bb\nMC-Insumo_Almacenable", "shape": "hexagon"}, {"color": "#e5e57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Fecha_Familia_Lopez", "label": "MI-Fecha_Familia_Lopez", "shape": "ellipse", "title": "MI-Fecha_Familia_Lopez\nInstancia de: MC-Fecha"}, {"color": "#e5e57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MC-Fecha", "label": "\u00abClase\u00bb\nMC-Fecha", "shape": "hexagon"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Harina", "label": "Harina", "shape": "ellipse", "title": "MI-Harina\nInstancia de: MC-Insumo_Almacenable"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Lomo", "label": "Lomo", "shape": "ellipse", "title": "MI-Lomo\nInstancia de: MC-Insumo_Frio"}, {"color": "#7ee5e5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Mozo_Nov_1", "label": "Mozo novato 1", "shape": "ellipse", "title": "MI-Mozo_Nov_1\nInstancia de: MC-Mozo_Novato"}, {"color": "#7ee5e5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MC-Mozo_Novato", "label": "\u00abClase\u00bb\nMC-Mozo_Novato", "shape": "hexagon"}, {"color": "#e57e7e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Evento_Familia_Lopez", "label": "Familia Lopez", "shape": "ellipse", "title": "MI-Evento_Familia_Lopez\nInstancia de: MC-Coffee_Break"}, {"color": "#e57ee5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Salon_Labarta", "label": "Labarta", "shape": "ellipse", "title": "MI-Salon_Labarta\nInstancia de: MC-Salon_externo"}, {"color": "#7e7ee5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MC-Proveedor_Nivel_3", "label": "\u00abClase\u00bb\nMC-Proveedor_Nivel_3", "shape": "hexagon"}, {"color": "#7e7ee5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MC-Proveedor", "label": "\u00abClase\u00bb\nMC-Proveedor", "shape": "hexagon"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MC-Insumo", "label": "\u00abClase\u00bb\nMC-Insumo", "shape": "hexagon"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Pollo", "label": "Pollo", "shape": "ellipse", "title": "MI-Pollo\nInstancia de: MC-Insumo_Frio"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Cerveza", "label": "Cerveza", "shape": "ellipse", "title": "MI-Cerveza\nInstancia de: MC-Cerveza"}, {"color": "#7ee5e5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-DJ_1", "label": "DJ 1", "shape": "ellipse", "title": "MI-DJ_1\nInstancia de: MC-Personal_Apoyo"}, {"color": "#e57e7e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Casamiento_256", "label": "Familia Flores", "shape": "ellipse", "title": "MI-Casamiento_256\nInstancia de: MC-Cena_formal"}, {"color": "#7ee5e5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Apoyo_Urgencia_1", "label": "Mozo de urgencia 1", "shape": "ellipse", "title": "MI-Apoyo_Urgencia_1\nInstancia de: MC-Personal_Apoyo"}, {"color": "#7ee5e5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Mozo_Exp_1", "label": "Mozo experimentado 1", "shape": "ellipse", "title": "MI-Mozo_Exp_1\nInstancia de: MC-Mozo_Experimentado"}, {"color": "#7ee5e5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Cocinero_Jefe", "label": "Jefe de cocina", "shape": "ellipse", "title": "MI-Cocinero_Jefe\nInstancia de: MC-Personal_Cocina"}, {"color": "#7ee5e5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MC-Personal_Cocina", "label": "\u00abClase\u00bb\nMC-Personal_Cocina", "shape": "hexagon"}, {"color": "#7ee5e5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MC-Personal", "label": "\u00abClase\u00bb\nMC-Personal", "shape": "hexagon"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Cerveza_Corona", "label": "Corona", "shape": "ellipse", "title": "MI-Cerveza_Corona\nInstancia de: MC-Cerveza"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Lacteos", "label": "L\u00e1cteos", "shape": "ellipse", "title": "MI-Lacteos\nInstancia de: MC-Insumo_Frio"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Gaseosa_Pepsi", "label": "Pepsi", "shape": "ellipse", "title": "MI-Gaseosa_Pepsi\nInstancia de: MC-Gaseosa"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MC-Gaseosa", "label": "\u00abClase\u00bb\nMC-Gaseosa", "shape": "hexagon"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Cerveza_Quilmes", "label": "Quilmes", "shape": "ellipse", "title": "MI-Cerveza_Quilmes\nInstancia de: MC-Cerveza"}, {"color": "#e57e7e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MC-Cena_formal", "label": "\u00abClase\u00bb\nMC-Cena_formal", "shape": "hexagon"}, {"color": "#7e7ee5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Proveedor_D", "label": "Proveedor D", "shape": "ellipse", "title": "MI-Proveedor_D\nInstancia de: MC-Proveedor_Nivel_2"}, {"color": "#7e7ee5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Proveedor_B", "label": "Proveedor B", "shape": "ellipse", "title": "MI-Proveedor_B\nInstancia de: MC-Proveedor_Nivel_1"}, {"color": "#e57ee5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Salon_Borus", "label": "Borus", "shape": "ellipse", "title": "MI-Salon_Borus\nInstancia de: MC-Salon_externo"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Bolsa_Papa", "label": "Papa Blanca", "shape": "ellipse", "title": "MI-Bolsa_Papa\nInstancia de: MC-Insumo_Almacenable"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Cebolla", "label": "Cebolla", "shape": "ellipse", "title": "MI-Cebolla\nInstancia de: MC-Insumo_Almacenable"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MC-Insumo_Frio", "label": "\u00abClase\u00bb\nMC-Insumo_Frio", "shape": "hexagon"}, {"color": "#7e7ee5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Proveedor_F", "label": "Proveedor F", "shape": "ellipse", "title": "MI-Proveedor_F\nInstancia de: MC-Proveedor_Nivel_3"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Gaseosa_CocaCola", "label": "Coca Cola", "shape": "ellipse", "title": "MI-Gaseosa_CocaCola\nInstancia de: MC-Gaseosa"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Mariscos", "label": "Mariscos", "shape": "ellipse", "title": "MI-Mariscos\nInstancia de: MC-Insumo_Frio"}, {"color": "#7e7ee5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MC-Proveedor_Nivel_1", "label": "\u00abClase\u00bb\nMC-Proveedor_Nivel_1", "shape": "hexagon"}, {"color": "#e57e7e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Coffee_Ministerio", "label": "Min. de Salud", "shape": "ellipse", "title": "MI-Coffee_Ministerio\nInstancia de: MC-Coffee_Break"}, {"color": "#E0E0E0", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#Incompleto", "label": "Incompleto", "shape": "ellipse", "title": "Incompleto\nInstancia de: -"}, {"color": "#e57e7e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MC-Coffee_Break", "label": "\u00abClase\u00bb\nMC-Coffee_Break", "shape": "hexagon"}, {"color": "#7ee5e5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Ninera_1", "label": "Ni\u00f1era 1", "shape": "ellipse", "title": "MI-Ninera_1\nInstancia de: MC-Personal_Apoyo"}, {"color": "#7ee5e5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MC-Personal_Apoyo", "label": "\u00abClase\u00bb\nMC-Personal_Apoyo", "shape": "hexagon"}, {"color": "#7e7ee5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Proveedor_E", "label": "Proveedor E", "shape": "ellipse", "title": "MI-Proveedor_E\nInstancia de: MC-Proveedor_Nivel_2"}, {"color": "#7e7ee5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MC-Proveedor_Nivel_2", "label": "\u00abClase\u00bb\nMC-Proveedor_Nivel_2", "shape": "hexagon"}, {"color": "#7ee5e5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MC-Mozo_Experimentado", "label": "\u00abClase\u00bb\nMC-Mozo_Experimentado", "shape": "hexagon"}, {"color": "#7ee5e5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MC-Personal_Salon", "label": "\u00abClase\u00bb\nMC-Personal_Salon", "shape": "hexagon"}, {"color": "#e57ee5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MC-Salon_propio", "label": "\u00abClase\u00bb\nMC-Salon_propio", "shape": "hexagon"}, {"color": "#e57ee5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MC-Salon", "label": "\u00abClase\u00bb\nMC-Salon", "shape": "hexagon"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Hielo", "label": "Hielo", "shape": "ellipse", "title": "MI-Hielo\nInstancia de: MC-Bebida"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Cerveza_Stella_Artois", "label": "Stella Artois", "shape": "ellipse", "title": "MI-Cerveza_Stella_Artois\nInstancia de: MC-Cerveza"}, {"color": "#e57e7e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MC-Evento", "label": "\u00abClase\u00bb\nMC-Evento", "shape": "hexagon"}, {"color": "#e57ee5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Salon_Fed_Gaucha", "label": "Fed_Gaucha", "shape": "ellipse", "title": "MI-Salon_Fed_Gaucha\nInstancia de: MC-Salon_externo"}, {"color": "#e57ee5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Salon_Soc_Espa\u00f1ola", "label": "Salon 1 Sociedad Espa\u00f1ola", "shape": "ellipse", "title": "MI-Salon_Soc_Espa\u00f1ola\nInstancia de: MC-Salon_propio"}, {"color": "#7e7ee5", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Proveedor_C", "label": "Proveedor C", "shape": "ellipse", "title": "MI-Proveedor_C\nInstancia de: MC-Proveedor_Nivel_1"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Tomate", "label": "Tomate", "shape": "ellipse", "title": "MI-Tomate\nInstancia de: MC-Insumo_Almacenable"}, {"color": "#E0E0E0", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#SinProveedor", "label": "SinProveedor", "shape": "ellipse", "title": "SinProveedor\nInstancia de: -"}, {"color": "#e5e57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Fecha_Sabado", "label": "MI-Fecha_Sabado", "shape": "ellipse", "title": "MI-Fecha_Sabado\nInstancia de: MC-Fecha"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Gaseosa_Benedictino", "label": "Benedictino", "shape": "ellipse", "title": "MI-Gaseosa_Benedictino\nInstancia de: MC-Gaseosa"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Cerveza_Patagonia_Amber_Lager", "label": "Patagonia Amber Lager", "shape": "ellipse", "title": "MI-Cerveza_Patagonia_Amber_Lager\nInstancia de: MC-Cerveza"}, {"color": "#E0E0E0", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#Suficiente", "label": "Suficiente", "shape": "ellipse", "title": "Suficiente\nInstancia de: -"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Cerveza_Heineken", "label": "Heineken", "shape": "ellipse", "title": "MI-Cerveza_Heineken\nInstancia de: MC-Cerveza"}, {"color": "#7ee57e", "font": {"color": "#f5f5f0"}, "id": "http://lajoaquina.com/ontologia#MI-Gaseosa_Aquarius", "label": "Aquarius", "shape": "ellipse", "title": "MI-Gaseosa_Aquarius\nInstancia de: MC-Gaseosa"}]);
+                  edges = new vis.DataSet([{"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Salon_Biofal", "label": "estado_habilitacion", "to": "http://lajoaquina.com/ontologia#Habilitado"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MC-Cerveza", "label": "subClassOf", "to": "http://lajoaquina.com/ontologia#MC-Bebida"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Salon_Uta", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Salon_externo"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Carne_Vacuna", "label": "provisto_por", "to": "http://lajoaquina.com/ontologia#MI-Proveedor_A"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Perejil", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Insumo_Almacenable"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Fecha_Familia_Lopez", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Fecha"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Harina", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Insumo_Almacenable"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Lomo", "label": "provisto_por", "to": "http://lajoaquina.com/ontologia#MI-Proveedor_A"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Mozo_Nov_1", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Mozo_Novato"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Evento_Familia_Lopez", "label": "lugar_asignado", "to": "http://lajoaquina.com/ontologia#MI-Salon_Labarta"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MC-Proveedor_Nivel_3", "label": "subClassOf", "to": "http://lajoaquina.com/ontologia#MC-Proveedor"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MC-Bebida", "label": "subClassOf", "to": "http://lajoaquina.com/ontologia#MC-Insumo"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Pollo", "label": "provisto_por", "to": "http://lajoaquina.com/ontologia#MI-Proveedor_A"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Cerveza", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Cerveza"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-DJ_1", "label": "asignado_a", "to": "http://lajoaquina.com/ontologia#MI-Casamiento_256"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Apoyo_Urgencia_1", "label": "cubre_baja_de", "to": "http://lajoaquina.com/ontologia#MI-Mozo_Exp_1"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Cocinero_Jefe", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Personal_Cocina"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MC-Personal_Cocina", "label": "subClassOf", "to": "http://lajoaquina.com/ontologia#MC-Personal"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Salon_Labarta", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Salon_externo"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Cerveza_Corona", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Cerveza"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Lacteos", "label": "provisto_por", "to": "http://lajoaquina.com/ontologia#MI-Proveedor_A"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Gaseosa_Pepsi", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Gaseosa"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Cerveza_Quilmes", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Cerveza"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Evento_Familia_Lopez", "label": "fecha_evento", "to": "http://lajoaquina.com/ontologia#MI-Fecha_Familia_Lopez"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Casamiento_256", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Cena_formal"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Salon_Uta", "label": "estado_habilitacion", "to": "http://lajoaquina.com/ontologia#Habilitado"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Perejil", "label": "provisto_por", "to": "http://lajoaquina.com/ontologia#MI-Proveedor_D"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Proveedor_B", "label": "plan_suplente_de", "to": "http://lajoaquina.com/ontologia#MI-Proveedor_A"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Salon_Borus", "label": "estado_habilitacion", "to": "http://lajoaquina.com/ontologia#Habilitado"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Bolsa_Papa", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Insumo_Almacenable"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Cebolla", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Insumo_Almacenable"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Mozo_Exp_1", "label": "asignado_a", "to": "http://lajoaquina.com/ontologia#MI-Casamiento_256"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Lomo", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Insumo_Frio"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Proveedor_F", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Proveedor_Nivel_3"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Gaseosa_CocaCola", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Gaseosa"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Mariscos", "label": "provisto_por", "to": "http://lajoaquina.com/ontologia#MI-Proveedor_A"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Carne_Vacuna", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Insumo_Frio"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MC-Proveedor_Nivel_1", "label": "subClassOf", "to": "http://lajoaquina.com/ontologia#MC-Proveedor"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Coffee_Ministerio", "label": "estado_evento", "to": "http://lajoaquina.com/ontologia#Incompleto"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Coffee_Ministerio", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Coffee_Break"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Salon_Borus", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Salon_externo"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Evento_Familia_Lopez", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Coffee_Break"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Ninera_1", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Personal_Apoyo"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Proveedor_E", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Proveedor_Nivel_2"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MC-Mozo_Experimentado", "label": "subClassOf", "to": "http://lajoaquina.com/ontologia#MC-Personal_Salon"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MC-Gaseosa", "label": "subClassOf", "to": "http://lajoaquina.com/ontologia#MC-Bebida"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MC-Salon_propio", "label": "subClassOf", "to": "http://lajoaquina.com/ontologia#MC-Salon"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Hielo", "label": "provisto_por", "to": "http://lajoaquina.com/ontologia#MI-Proveedor_D"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Cocinero_Jefe", "label": "asignado_a", "to": "http://lajoaquina.com/ontologia#MI-Casamiento_256"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Cerveza_Stella_Artois", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Cerveza"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MC-Coffee_Break", "label": "subClassOf", "to": "http://lajoaquina.com/ontologia#MC-Evento"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-DJ_1", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Personal_Apoyo"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Bolsa_Papa", "label": "provisto_por", "to": "http://lajoaquina.com/ontologia#MI-Proveedor_D"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Salon_Uta", "label": "salon_respaldo_de", "to": "http://lajoaquina.com/ontologia#MI-Salon_Fed_Gaucha"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MC-Insumo_Almacenable", "label": "subClassOf", "to": "http://lajoaquina.com/ontologia#MC-Insumo"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Salon_Soc_Espa\u00f1ola", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Salon_propio"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Proveedor_C", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Proveedor_Nivel_1"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Salon_Fed_Gaucha", "label": "estado_habilitacion", "to": "http://lajoaquina.com/ontologia#Habilitado"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Tomate", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Insumo_Almacenable"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Salon_Borus", "label": "salon_respaldo_de", "to": "http://lajoaquina.com/ontologia#MI-Salon_Labarta"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MC-Cena_formal", "label": "subClassOf", "to": "http://lajoaquina.com/ontologia#MC-Evento"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Hielo", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Bebida"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Harina", "label": "estado_compra", "to": "http://lajoaquina.com/ontologia#SinProveedor"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Mariscos", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Insumo_Frio"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MC-Personal_Salon", "label": "subClassOf", "to": "http://lajoaquina.com/ontologia#MC-Personal"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MC-Personal_Apoyo", "label": "subClassOf", "to": "http://lajoaquina.com/ontologia#MC-Personal"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Coffee_Ministerio", "label": "fecha_evento", "to": "http://lajoaquina.com/ontologia#MI-Fecha_Sabado"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MC-Mozo_Novato", "label": "subClassOf", "to": "http://lajoaquina.com/ontologia#MC-Personal_Salon"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MC-Insumo_Frio", "label": "subClassOf", "to": "http://lajoaquina.com/ontologia#MC-Insumo"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Cerveza", "label": "provisto_por", "to": "http://lajoaquina.com/ontologia#MI-Proveedor_D"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Gaseosa_Benedictino", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Gaseosa"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Proveedor_A", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Proveedor_Nivel_1"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Salon_Fed_Gaucha", "label": "salon_respaldo_de", "to": "http://lajoaquina.com/ontologia#MI-Salon_Borus"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Casamiento_256", "label": "lugar_asignado", "to": "http://lajoaquina.com/ontologia#MI-Salon_Labarta"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Mozo_Nov_1", "label": "asignado_a", "to": "http://lajoaquina.com/ontologia#MI-Casamiento_256"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MC-Proveedor_Nivel_2", "label": "subClassOf", "to": "http://lajoaquina.com/ontologia#MC-Proveedor"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Cerveza_Patagonia_Amber_Lager", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Cerveza"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Proveedor_E", "label": "plan_suplente_de", "to": "http://lajoaquina.com/ontologia#MI-Proveedor_D"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Salon_Fed_Gaucha", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Salon_externo"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Salon_Soc_Espa\u00f1ola", "label": "estado_habilitacion", "to": "http://lajoaquina.com/ontologia#Habilitado"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Evento_Familia_Lopez", "label": "capacidad_salon", "to": "http://lajoaquina.com/ontologia#Suficiente"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Apoyo_Urgencia_1", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Personal_Apoyo"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Salon_Biofal", "label": "salon_respaldo_de", "to": "http://lajoaquina.com/ontologia#MI-Salon_Uta"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Cerveza_Heineken", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Cerveza"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Proveedor_C", "label": "plan_suplente_de", "to": "http://lajoaquina.com/ontologia#MI-Proveedor_B"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Proveedor_D", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Proveedor_Nivel_2"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Pollo", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Insumo_Frio"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Fecha_Sabado", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Fecha"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Cebolla", "label": "provisto_por", "to": "http://lajoaquina.com/ontologia#MI-Proveedor_D"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Casamiento_256", "label": "fecha_evento", "to": "http://lajoaquina.com/ontologia#MI-Fecha_Sabado"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Lacteos", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Insumo_Frio"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Tomate", "label": "provisto_por", "to": "http://lajoaquina.com/ontologia#MI-Proveedor_D"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Mozo_Exp_1", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Mozo_Experimentado"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Proveedor_B", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Proveedor_Nivel_1"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MC-Salon_externo", "label": "subClassOf", "to": "http://lajoaquina.com/ontologia#MC-Salon"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Casamiento_256", "label": "capacidad_salon", "to": "http://lajoaquina.com/ontologia#Suficiente"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Gaseosa_Aquarius", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Gaseosa"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Salon_Biofal", "label": "a", "to": "http://lajoaquina.com/ontologia#MC-Salon_externo"}, {"arrows": "to", "color": "#8c8c8c", "font": {"color": "#d4d4d4", "size": 9, "strokeWidth": 0}, "from": "http://lajoaquina.com/ontologia#MI-Ninera_1", "label": "asignado_a", "to": "http://lajoaquina.com/ontologia#MI-Casamiento_256"}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "barnesHut": {
+            "avoidOverlap": 0,
+            "centralGravity": 0.3,
+            "damping": 0.09,
+            "gravitationalConstant": -3000,
+            "springConstant": 0.001,
+            "springLength": 170
+        },
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
