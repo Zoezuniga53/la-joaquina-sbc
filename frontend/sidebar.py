@@ -3,6 +3,7 @@
 import streamlit as st
 from rdflib.namespace import RDF
 from backend.catalogos import CERVEZAS, ESTADOS_ENTREGA, ESTADOS_POLICIAL, GASEOSAS, MESES, PLATOS, PROVEEDORES, SALONES, SIN_SALON, max_dias_mes
+from backend.fechas import FECHA_MAXIMA, a_fecha, ajustar_a_reservable, primer_dia_reservable
 from backend.motor import fv
 from backend.ontologia import cat
 from frontend.componentes import render_html
@@ -59,9 +60,12 @@ def render_sidebar(g):
 
         init_key(k("cliente"), str(g.value(ev_uri, cat.cliente) or ""))
         init_key(k("modalidad"), "Coffee Break" if (ev_uri, RDF.type, cat["MC-Coffee_Break"]) in g else "Cena Formal")
-        init_key(k("dia"), dia_g)
-        init_key(k("mes"), mes_g if mes_g in MESES else "Octubre")
-        init_key(k("anio"), anio_g)
+        if k("fecha") not in st.session_state:
+            fecha_guardada = a_fecha(dia_g, mes_g if mes_g in MESES else "Octubre", anio_g)
+            fecha_inicial = ajustar_a_reservable(fecha_guardada)
+            st.session_state[k("fecha")] = fecha_inicial
+            if fecha_inicial != fecha_guardada:
+                st.session_state[k("fecha_aviso")] = (fecha_guardada, fecha_inicial)
         init_key(k("clima"), "Calor" if fecha_uri is not None and str(g.value(fecha_uri, cat.ambiente)) == "Calor" else "Frío")
         init_key(k("salon"), fv(salon_uri_g) if salon_uri_g is not None and fv(salon_uri_g) in SALONES else SIN_SALON)
         init_key(k("electrico"), "Normal")
@@ -92,21 +96,17 @@ def render_sidebar(g):
         with st.expander("1. Datos del Evento y Fecha", expanded=True):
             st.text_input("Cliente", key=k("cliente"))
             st.selectbox("Modalidad", ["Cena Formal", "Coffee Break"], key=k("modalidad"))
-            c3, c4 = st.columns(2)
-            with c3:
-                st.number_input("Año", min_value=2025, max_value=2030, step=1, key=k("anio"))
-            with c4:
-                st.selectbox("Mes", MESES, key=k("mes"))
-
-            max_dias_actual = max_dias_mes(st.session_state[k("mes")], st.session_state[k("anio")])
-            if st.session_state[k("dia")] > max_dias_actual:
-                st.session_state[k("dia")] = max_dias_actual
-
-            c1, c2 = st.columns([1, 1])
-            with c1:
-                st.number_input("Día", min_value=1, max_value=max_dias_actual, step=1, key=k("dia"))
-            with c2:
-                st.selectbox("Clima previsto", ["Frío", "Calor"], key=k("clima"))
+            minimo = primer_dia_reservable()
+            if st.session_state[k("fecha")] < minimo:  # p. ej. si la sesión quedó abierta de un día para otro
+                st.session_state[k("fecha")] = minimo
+            st.date_input("Fecha del evento", min_value=minimo, max_value=FECHA_MAXIMA,
+                          format="DD/MM/YYYY", key=k("fecha"))
+            aviso = st.session_state.get(k("fecha_aviso"))
+            if aviso and st.session_state[k("fecha")] == aviso[1]:
+                st.caption(f"La fecha guardada ({aviso[0]:%d/%m/%Y}) ya pasó; se ajustó al primer día disponible.")
+            else:
+                st.caption(f"Solo se admiten fechas desde el {minimo:%d/%m/%Y}.")
+            st.selectbox("Clima previsto", ["Frío", "Calor"], key=k("clima"))
 
         # ---------- 2. Salón ----------
         with st.expander("2. Salón", expanded=False):
@@ -167,7 +167,10 @@ def render_sidebar(g):
 
         # ---------- 6. Personal y Servicios ----------
         with st.expander("6. Personal y Servicios", expanded=False):
-            st.checkbox("Servicio de Niñera", key=k("ninera"))
+            if st.session_state[k("ninos")] > 0:
+                st.checkbox("Servicio de Niñera", key=k("ninera"))
+            else:
+                st.caption("Servicio de niñera no aplica (cantidad de niños: 0).")
             st.checkbox("Transporte de Invitados", key=k("transporte"))
             st.checkbox("Ambientación y DJ", key=k("dj"))
             st.number_input("Bajas de mozos titulares a 48 hs", min_value=0, max_value=10, step=1, key=k("bajas"))

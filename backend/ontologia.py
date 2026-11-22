@@ -59,7 +59,7 @@ cat:cubre_baja_de a owl:ObjectProperty ; rdfs:domain cat:MC-Personal ; rdfs:rang
 cat:asignado_a a owl:ObjectProperty ; rdfs:domain cat:MC-Personal ; rdfs:range cat:MC-Evento .
 
 # ---------- 3. EVENTOS Y FECHA ----------
-cat:MI-Fecha_Sabado a cat:MC-Fecha ; cat:dia 17 ; cat:mes "Octubre" ; cat:año 2026 ; cat:ambiente "Frio" .
+cat:MI-Fecha_Sabado a cat:MC-Fecha ; cat:dia 17 ; cat:mes "Diciembre" ; cat:año 2026 ; cat:ambiente "Frio" .
 
 cat:MI-Casamiento_256 a cat:MC-Cena_formal ;
     cat:cliente "Familia Flores" ; cat:cant_adultos 200 ; cat:cant_niños 30 ;

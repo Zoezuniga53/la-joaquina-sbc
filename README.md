@@ -20,6 +20,7 @@ backend/                    Lógica. No importa Streamlit
   motor.py                  Motor de inferencia, herencia de marcos, proveedor activo, salón alternativo
   catalogos.py              Salones, proveedores, menús, meses y textos de dominio
   grafo.py                  Escritura en el grafo, grafo inicial, alta y reasignación de eventos
+  fechas.py                 Regla de fechas: solo se reserva desde el día siguiente a hoy
   modelos.py                ParametrosEvento (entrada) y Analisis (salida)
   servicios.py              analizar_evento(): actualiza el grafo, calcula insumos, corre el motor, evalúa suministros
 frontend/                   Presentación (Streamlit)
@@ -40,6 +41,11 @@ frontend/                   Presentación (Streamlit)
 3. `frontend.controles.leer_parametros()` los convierte en un `ParametrosEvento`.
 4. `backend.servicios.analizar_evento()` actualiza el grafo, ejecuta el motor y devuelve un `Analisis`.
 5. `frontend.vista_*` dibujan los resultados a partir de `ParametrosEvento` y `Analisis`.
+
+## Reglas de la interfaz
+
+- **Fechas:** el selector de fecha solo permite días posteriores a hoy (hasta 2030). Si un evento guardado tiene una fecha que ya pasó, se ajusta al primer día disponible y se avisa.
+- **Niñera:** la opción solo aparece si el evento tiene al menos un niño. Con 0 niños no se ofrece ni se cuenta en la brigada.
 
 ## Regla de oro
 

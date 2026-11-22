@@ -1,7 +1,7 @@
 """Lectura de los controles de la interfaz hacia ParametrosEvento."""
 
 import streamlit as st
-from backend.catalogos import PROVEEDORES, SIN_SALON, max_dias_mes
+from backend.catalogos import MESES, PROVEEDORES, SIN_SALON
 from backend.modelos import ParametrosEvento
 from backend.ontologia import cat
 
@@ -14,9 +14,8 @@ def leer_parametros(E, g):
     cliente = ss[k("cliente")].strip() or "Cliente sin nombre"
     modalidad = ss[k("modalidad")]
     es_cena = modalidad == "Cena Formal"
-    anio = int(ss[k("anio")])
-    mes = ss[k("mes")]
-    dia = min(int(ss[k("dia")]), max_dias_mes(mes, anio))
+    fecha = ss[k("fecha")]
+    anio, mes, dia = fecha.year, MESES[fecha.month - 1], fecha.day
     clima = ss[k("clima")]
     ambiente = "Calor" if clima == "Calor" else "Frio"
     salon_id = ss[k("salon")]
@@ -30,7 +29,8 @@ def leer_parametros(E, g):
     mesa_dulce = es_cena and ss[k("mesa_dulce")] == "Sí"
     marca_cerveza, marca_gaseosa = ss[k("cerveza")], ss[k("gaseosa")]
     extra_papa, extra_cerveza = float(ss["extra_papa"]), float(ss["extra_cerveza"])
-    ninera, transporte, dj = ss[k("ninera")], ss[k("transporte")], ss[k("dj")]
+    ninera = bool(ss[k("ninera")]) and ninos > 0  # sin niños no hay servicio de niñera
+    transporte, dj = ss[k("transporte")], ss[k("dj")]
     bajas = int(ss[k("bajas")])
     jefa_ausente = ss[k("jefa")] == "Baja imprevista"
     hielo = ambiente == "Calor"
