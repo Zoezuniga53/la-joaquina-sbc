@@ -21,19 +21,20 @@ def tabla_html(columnas, filas):
 
 
 def tarjeta(titulo, valor, detalle="", estado=""):
+    clase_tarjeta = f"tarjeta-resumen tarjeta-{estado}" if estado else "tarjeta-resumen"
+    clase_valor = f"tarjeta-valor {estado}".strip()
     return (
-        f'<div class="tarjeta-resumen"><div class="tarjeta-titulo">{titulo}</div>'
-        f'<div class="tarjeta-valor {estado}">{valor}</div>'
+        f'<div class="{clase_tarjeta}"><div class="tarjeta-titulo">{titulo}</div>'
+        f'<div class="{clase_valor}">{valor}</div>'
         f'<div class="tarjeta-detalle">{detalle}</div></div>'
     )
 
 
-
 def render_hero():
     render_html(f"""
-<div style="background: linear-gradient(rgba(8, 8, 8, 0.65), rgba(8, 8, 8, 0.90)), url('{IMG_HERO}'); background-size: cover; background-position: center; padding: 72px 30px; text-align: center; border-bottom: 1px solid #c5a059; margin-bottom: 26px; border-radius: 4px;">
-<p style="color: #c5a059; font-family: 'Montserrat', sans-serif; font-size: 0.85rem; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 10px;">Bienvenido a La Joaquina</p>
-<h1 style="color: #ffffff; font-family: 'Cormorant Garamond', serif; font-size: 3.4rem; font-weight: 600; margin: 0;">La Joaquina | Eventos gastronómicos</h1>
-<p style="color: #d4d4d4; font-family: 'Montserrat', sans-serif; font-size: 0.95rem; letter-spacing: 2px; text-transform: uppercase; margin-top: 12px;">Sistema de Gestión y Orquestación Logística</p>
+<div class="hero-banner" style="background-image: linear-gradient(135deg, rgba(6, 10, 20, 0.85) 0%, rgba(13, 22, 42, 0.82) 70%, rgba(127, 29, 29, 0.45) 100%), url('{IMG_HERO}');">
+<p class="hero-eyebrow">Bienvenido a La Joaquina</p>
+<h1 class="hero-titulo">La Joaquina | Eventos gastronómicos</h1>
+<p class="hero-subtitulo">Sistema de Gestión y Orquestación Logística</p>
 </div>
 """)
