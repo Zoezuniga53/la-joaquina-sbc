@@ -45,6 +45,7 @@ frontend/                   Presentación (Streamlit)
 ## Reglas de la interfaz
 
 - **Fechas:** el selector de fecha solo permite días posteriores a hoy (hasta 2030). Si un evento guardado tiene una fecha que ya pasó, se ajusta al primer día disponible y se avisa.
+- **Salón:** primero se elige el tipo. "Salón Propio" muestra la etiqueta *Sociedad Española*; "Salón Externo" habilita una segunda lista con Labarta, Borus, Federación Gaucha, UTA y Biofal.
 - **Niñera:** la opción solo aparece si el evento tiene al menos un niño. Con 0 niños no se ofrece ni se cuenta en la brigada.
 
 ## Regla de oro

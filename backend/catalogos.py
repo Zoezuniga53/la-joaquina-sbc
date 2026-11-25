@@ -4,6 +4,23 @@ import calendar
 
 
 SIN_SALON = "SIN_SALON"
+# Clasificación de salones para la interfaz
+TIPO_PROPIO, TIPO_EXTERNO = "Salón Propio", "Salón Externo"
+SALON_PROPIO = "MI-Salon_Soc_Española"
+SALONES_EXTERNOS = [
+    "MI-Salon_Labarta",
+    "MI-Salon_Borus",
+    "MI-Salon_Fed_Gaucha",
+    "MI-Salon_Uta",
+    "MI-Salon_Biofal",
+]
+
+
+def tipo_de_salon(salon_id):
+    """Devuelve 'Salón Propio' o 'Salón Externo' según el salón."""
+    return TIPO_PROPIO if salon_id == SALON_PROPIO else TIPO_EXTERNO
+
+
 SALONES = {
     SIN_SALON: "Pendiente de asignación",
     "MI-Salon_Labarta": "Salón Labarta",

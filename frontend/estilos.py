@@ -270,6 +270,19 @@ table.tabla-lj tr:hover td { background-color: #191919; }
 .txt-alerta { color: #e09a9a; font-weight: 500; }
 .txt-aviso { color: #d9bf85; font-weight: 500; }
 hr { border-color: #2a2a2a !important; }
+
+.etiqueta-salon {
+    display: inline-block;
+    background-color: #141414;
+    border: 1px solid #C5A059;
+    border-left: 4px solid #C5A059;
+    color: #C5A059;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 8px 14px;
+    margin: 4px 0 2px 0;
+    border-radius: 3px;
+}
 </style>
 """
 

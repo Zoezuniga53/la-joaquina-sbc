@@ -1,6 +1,7 @@
 """Estado de sesión de Streamlit y callbacks de la interfaz."""
 
 import streamlit as st
+from backend.catalogos import SALON_PROPIO, SALONES_EXTERNOS, TIPO_EXTERNO, TIPO_PROPIO, tipo_de_salon
 from backend.grafo import construir_grafo_inicial, crear_evento, reasignar_salon
 
 
@@ -36,7 +37,10 @@ def cb_cancelar_alta():
 def cb_confirmar_alta():
     nombre = (st.session_state.get("alta_cliente") or "").strip() or "Nuevo Cliente"
     modalidad = st.session_state.get("alta_modalidad", "Cena Formal")
-    salon_id = st.session_state.get("alta_salon", "MI-Salon_Labarta")
+    if st.session_state.get("alta_tipo_salon", TIPO_EXTERNO) == TIPO_PROPIO:
+        salon_id = SALON_PROPIO
+    else:
+        salon_id = st.session_state.get("alta_salon_ext", SALONES_EXTERNOS[0])
     nuevo_id = crear_evento(st.session_state.g, nombre, modalidad, salon_id, st.session_state.eventos_ids)
     st.session_state.eventos_ids.append(nuevo_id)
     st.session_state.evento_activo = nuevo_id
@@ -45,5 +49,7 @@ def cb_confirmar_alta():
 
 def cb_reasignar_salon(evento_id, salon_id):
     st.session_state[f"{evento_id}__salon"] = salon_id
+    st.session_state[f"{evento_id}__tipo_salon"] = tipo_de_salon(salon_id)
+    st.session_state[f"{evento_id}__salon_ext"] = salon_id if salon_id in SALONES_EXTERNOS else None
     st.session_state[f"{evento_id}__electrico"] = "Normal"
     reasignar_salon(st.session_state.g, evento_id, salon_id)

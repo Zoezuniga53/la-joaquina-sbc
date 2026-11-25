@@ -2,7 +2,7 @@
 
 import streamlit as st
 from rdflib.namespace import RDF
-from backend.catalogos import CERVEZAS, ESTADOS_ENTREGA, ESTADOS_POLICIAL, GASEOSAS, MESES, PLATOS, PROVEEDORES, SALONES, SIN_SALON, max_dias_mes
+from backend.catalogos import CERVEZAS, ESTADOS_ENTREGA, ESTADOS_POLICIAL, GASEOSAS, MESES, PLATOS, PROVEEDORES, SALONES, SALONES_EXTERNOS, SALON_PROPIO, SIN_SALON, TIPO_EXTERNO, TIPO_PROPIO, max_dias_mes
 from backend.fechas import FECHA_MAXIMA, a_fecha, ajustar_a_reservable, primer_dia_reservable
 from backend.motor import fv
 from backend.ontologia import cat
@@ -22,12 +22,11 @@ def render_sidebar(g):
             render_html('<div class="rotulo-seccion">Alta de nuevo evento</div>')
             st.text_input("Nombre del Cliente", value="Familia López", key="alta_cliente")
             st.selectbox("Modalidad", ["Cena Formal", "Coffee Break"], key="alta_modalidad")
-            st.selectbox(
-                "Salón inicial",
-                [k for k in SALONES if k != SIN_SALON],
-                format_func=lambda k: SALONES[k],
-                key="alta_salon",
-            )
+            st.selectbox("Tipo de salón", [TIPO_PROPIO, TIPO_EXTERNO], index=1, key="alta_tipo_salon")
+            if st.session_state["alta_tipo_salon"] == TIPO_PROPIO:
+                render_html(f'<div class="etiqueta-salon">{SALONES[SALON_PROPIO]}</div>')
+            else:
+                st.selectbox("Salón externo", SALONES_EXTERNOS, format_func=lambda s: SALONES[s], key="alta_salon_ext")
             st.button("CONFIRMAR ALTA DEL EVENTO", width="stretch", on_click=cb_confirmar_alta)
             st.button("CANCELAR", width="stretch", on_click=cb_cancelar_alta)
 
@@ -62,12 +61,11 @@ def render_sidebar(g):
         init_key(k("modalidad"), "Coffee Break" if (ev_uri, RDF.type, cat["MC-Coffee_Break"]) in g else "Cena Formal")
         if k("fecha") not in st.session_state:
             fecha_guardada = a_fecha(dia_g, mes_g if mes_g in MESES else "Octubre", anio_g)
-            fecha_inicial = ajustar_a_reservable(fecha_guardada)
-            st.session_state[k("fecha")] = fecha_inicial
-            if fecha_inicial != fecha_guardada:
-                st.session_state[k("fecha_aviso")] = (fecha_guardada, fecha_inicial)
+            st.session_state[k("fecha")] = ajustar_a_reservable(fecha_guardada)
         init_key(k("clima"), "Calor" if fecha_uri is not None and str(g.value(fecha_uri, cat.ambiente)) == "Calor" else "Frío")
-        init_key(k("salon"), fv(salon_uri_g) if salon_uri_g is not None and fv(salon_uri_g) in SALONES else SIN_SALON)
+        salon_ini = fv(salon_uri_g) if salon_uri_g is not None and fv(salon_uri_g) in SALONES else SIN_SALON
+        init_key(k("tipo_salon"), TIPO_PROPIO if salon_ini == SALON_PROPIO else TIPO_EXTERNO)
+        init_key(k("salon_ext"), salon_ini if salon_ini in SALONES_EXTERNOS else None)
         init_key(k("electrico"), "Normal")
         init_key(k("adultos"), int(g.value(ev_uri, cat.cant_adultos) or 100))
         init_key(k("ninos"), int(g.value(ev_uri, cat["cant_niños"]) or 0))
@@ -101,23 +99,27 @@ def render_sidebar(g):
                 st.session_state[k("fecha")] = minimo
             st.date_input("Fecha del evento", min_value=minimo, max_value=FECHA_MAXIMA,
                           format="DD/MM/YYYY", key=k("fecha"))
-            aviso = st.session_state.get(k("fecha_aviso"))
-            if aviso and st.session_state[k("fecha")] == aviso[1]:
-                st.caption(f"La fecha guardada ({aviso[0]:%d/%m/%Y}) ya pasó; se ajustó al primer día disponible.")
-            else:
-                st.caption(f"Solo se admiten fechas desde el {minimo:%d/%m/%Y}.")
+            st.caption(f"Solo se admiten fechas desde el {minimo:%d/%m/%Y}.")
             st.selectbox("Clima previsto", ["Frío", "Calor"], key=k("clima"))
 
         # ---------- 2. Salón ----------
         with st.expander("2. Salón", expanded=False):
-            st.selectbox(
-                "Salón asignado",
-                list(SALONES.keys()),
-                format_func=lambda s: SALONES[s] if s == SIN_SALON
-                else f"{SALONES[s]} ({g.value(cat[s], cat.capacidad_max)} personas)",
-                key=k("salon"),
-            )
-            salon_id = st.session_state[k("salon")]
+            st.selectbox("Tipo de salón", [TIPO_PROPIO, TIPO_EXTERNO], key=k("tipo_salon"))
+            if st.session_state[k("tipo_salon")] == TIPO_PROPIO:
+                salon_id = SALON_PROPIO
+                render_html(f'<div class="etiqueta-salon">{SALONES[SALON_PROPIO]}</div>')
+                st.caption(f"Capacidad: {g.value(cat[SALON_PROPIO], cat.capacidad_max)} personas")
+            else:
+                st.selectbox(
+                    "Salón externo",
+                    SALONES_EXTERNOS,
+                    index=None,
+                    placeholder="Elegí un salón externo",
+                    format_func=lambda s: f"{SALONES[s]} ({g.value(cat[s], cat.capacidad_max)} personas)",
+                    key=k("salon_ext"),
+                )
+                salon_id = st.session_state[k("salon_ext")] or SIN_SALON
+            st.session_state[k("salon")] = salon_id
             if salon_id != SIN_SALON:
                 s_uri = cat[salon_id]
                 es_externo = (s_uri, RDF.type, cat["MC-Salon_externo"]) in g
